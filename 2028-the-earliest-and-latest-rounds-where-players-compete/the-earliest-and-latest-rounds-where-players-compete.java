@@ -1,73 +1,35 @@
 class Solution {
+    public int[] earliestAndLatest(int n, int f, int s) {
+        int p1 = Math.min(f, s), p2 = Math.max(f, s);
+        if (p1 + p2 == n + 1) return new int[]{1, 1};
 
-    private int minRound = Integer.MAX_VALUE;
-    private int maxRound = Integer.MIN_VALUE;
-    private Map<String, boolean[]> memo = new HashMap<>();
+        int m = (n + 1) / 2, minR = Integer.MAX_VALUE, maxR = Integer.MIN_VALUE;
+        if (p1 - 1 > n - p2) {
+            int t = n + 1 - p1;
+            p1 = n + 1 - p2;
+            p2 = t;
+        }
 
-    public int[] earliestAndLatest(int n, int firstPlayer, int secondPlayer) {
-        dfs(1, getSortedArray(n), firstPlayer, secondPlayer);
-        return new int[]{minRound, maxRound};
-    }
-
-    private void dfs(int round, List<Integer> players, int f, int s) {
-        int l = players.size();
-        for (int i = 0; i < l / 2; i++) {
-            int a = players.get(i), b = players.get(l - 1 - i);
-            if ((a == f && b == s) || (a == s && b == f)) {
-                minRound = Math.min(minRound, round);
-                maxRound = Math.max(maxRound, round);
-                return;
+        if (p2 * 2 <= n + 1) {
+            int a = p1 - 1, b = p2 - p1 - 1;
+            for (int i = 0; i <= a; i++) {
+                for (int j = 0; j <= b; j++) {
+                    int[] next = earliestAndLatest(m, i + 1, i + j + 2);
+                    minR = Math.min(minR, next[0] + 1);
+                    maxR = Math.max(maxR, next[1] + 1);
+                }
+            }
+        } else {
+            int p4 = n + 1 - p2, a = p1 - 1, b = p4 - p1 - 1, c = p2 - p4 - 1;
+            for (int i = 0; i <= a; i++) {
+                for (int j = 0; j <= b; j++) {
+                    int offset = i + j + 1 + (c + 1) / 2 + 1;
+                    int[] next = earliestAndLatest(m, i + 1, offset);
+                    minR = Math.min(minR, next[0] + 1);
+                    maxR = Math.max(maxR, next[1] + 1);
+                }
             }
         }
-
-        List<int[]> matches = new ArrayList<>();
-        int i = 0, j = players.size() - 1;
-        while (i < j) {
-            matches.add(new int[]{players.get(i), players.get(j)});
-            i++;
-            j--;
-        }
-        Integer mid = (i == j) ? players.get(i) : null;
-
-        dfsMatch(round, matches, 0, new HashSet<>(), mid, f, s);
-    }
-
-    private void dfsMatch(int round, List<int[]> matches, int idx, Set<Integer> next, Integer mid, int f, int s) {
-        if (idx == matches.size()) {
-            if (mid != null) next.add(mid);
-            List<Integer> newList = new ArrayList<>(next);
-            Collections.sort(newList);
-            dfs(round + 1, newList, f, s);
-            return;
-        }
-
-        int[] pair = matches.get(idx);
-        int a = pair[0], b = pair[1];
-
-        if ((a == f || a == s) && !(b == f || b == s)) {
-            next.add(a); 
-            dfsMatch(round, matches, idx + 1, next, mid, f, s);
-            next.remove(a);
-        } else if ((b == f || b == s) && !(a == f || a == s)) {
-            next.add(b); 
-            dfsMatch(round, matches, idx + 1, next, mid, f, s);
-            next.remove(b);
-        } else if ((a == f && b == s) || (a == s && b == f)) {
-            return;
-        } else {
-            next.add(a);
-            dfsMatch(round, matches, idx + 1, next, mid, f, s);
-            next.remove(a);
-
-            next.add(b);
-            dfsMatch(round, matches, idx + 1, next, mid, f, s);
-            next.remove(b);
-        }
-    }
-
-    private List<Integer> getSortedArray(int n) {
-        List<Integer> res = new ArrayList<>();
-        for (int i = 1; i <= n; i++) res.add(i);
-        return res;
+        return new int[]{minR, maxR};
     }
 }
