@@ -1,31 +1,35 @@
 class Solution {
     public String minWindow(String s, String t) {
-        
         if (s.length() < t.length()) return "";
 
-        Map<Character, Integer> need = new HashMap<>();
-        Map<Character, Integer> window = new HashMap<>();
+        int[] need = new int[128];
+        int[] window = new int[128];
 
         for (char c : t.toCharArray()) {
-            need.put(c, need.getOrDefault(c, 0) + 1);
+            need[c]++;
         }
 
-        int left = 0, right = 0;
-        int valid = 0;
+        int left = 0, right = 0, valid = 0;
         int start = 0, len = Integer.MAX_VALUE;
+        int required = 0;
+
+        // Count how many distinct chars are needed
+        for (int count : need) {
+            if (count > 0) required++;
+        }
 
         while (right < s.length()) {
             char c = s.charAt(right);
             right++;
 
-            if (need.containsKey(c)) {
-                window.put(c, window.getOrDefault(c, 0) + 1);
-                if (window.get(c).intValue() == need.get(c).intValue()) {
+            if (need[c] > 0) {
+                window[c]++;
+                if (window[c] == need[c]) {
                     valid++;
                 }
             }
 
-            while (valid == need.size()) {
+            while (valid == required) {
                 if (right - left < len) {
                     start = left;
                     len = right - left;
@@ -34,11 +38,11 @@ class Solution {
                 char d = s.charAt(left);
                 left++;
 
-                if (need.containsKey(d)) {
-                    if (window.get(d).intValue() == need.get(d).intValue()) {
+                if (need[d] > 0) {
+                    if (window[d] == need[d]) {
                         valid--;
                     }
-                    window.put(d, window.get(d) - 1);
+                    window[d]--;
                 }
             }
         }
