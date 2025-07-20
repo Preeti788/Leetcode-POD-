@@ -1,65 +1,55 @@
 class Solution {
-    class TrieNode {
-        String name;
-        Map<String, TrieNode> children = new HashMap<>();
-        String serial = "";
-        boolean toDelete = false;
-
-        TrieNode(String name) {
-            this.name = name;
-        }
+    static class Node {
+        Map<String, Node> children = new TreeMap<>();
+        boolean deleted = false;
     }
 
-    TrieNode root = new TrieNode("");
-    Map<String, List<TrieNode>> serialMap = new HashMap<>();
-
     public List<List<String>> deleteDuplicateFolder(List<List<String>> paths) {
+        Node root = new Node();
+
         for (List<String> path : paths) {
-            TrieNode curr = root;
-            for (String folder : path) {
-                curr.children.putIfAbsent(folder, new TrieNode(folder));
-                curr = curr.children.get(folder);
+            Node curr = root;
+            for (String name : path) {
+                curr = curr.children.computeIfAbsent(name, k -> new Node());
             }
         }
 
-        serialize(root);
+        Map<String, List<Node>> map = new HashMap<>();
+        encode(root, map);
 
-
-        for (List<TrieNode> group : serialMap.values()) {
+        for (List<Node> group : map.values()) {
             if (group.size() > 1) {
-                for (TrieNode node : group) {
-                    node.toDelete = true;
+                for (Node n : group) {
+                    n.deleted = true;
                 }
             }
         }
 
-    
         List<List<String>> result = new ArrayList<>();
-        collectPaths(root, new ArrayList<>(), result);
+        collect(root, new ArrayList<>(), result);
         return result;
     }
 
-    private String serialize(TrieNode node) {
-        if (node.children.isEmpty()) return "";
+    private String encode(Node node, Map<String, List<Node>> map) {
+        if (node.children.isEmpty()) return "()";
 
-        List<String> serialList = new ArrayList<>();
-        for (TrieNode child : node.children.values()) {
-            String childSerial = serialize(child);
-            serialList.add("(" + child.name + childSerial + ")");
+        List<String> parts = new ArrayList<>();
+        for (Map.Entry<String, Node> entry : node.children.entrySet()) {
+            String sub = encode(entry.getValue(), map);
+            parts.add(entry.getKey() + sub);
         }
-
-        Collections.sort(serialList);
-        node.serial = String.join("", serialList);
-        serialMap.computeIfAbsent(node.serial, k -> new ArrayList<>()).add(node);
-        return node.serial;
+        Collections.sort(parts);
+        String sign = "(" + String.join("", parts) + ")";
+        map.computeIfAbsent(sign, k -> new ArrayList<>()).add(node);
+        return sign;
     }
 
-    private void collectPaths(TrieNode node, List<String> path, List<List<String>> result) {
-        for (TrieNode child : node.children.values()) {
-            if (child.toDelete) continue;
-            path.add(child.name);
-            result.add(new ArrayList<>(path));
-            collectPaths(child, path, result);
+    private void collect(Node node, List<String> path, List<List<String>> res) {
+        for (Map.Entry<String, Node> entry : node.children.entrySet()) {
+            if (entry.getValue().deleted) continue;
+            path.add(entry.getKey());
+            res.add(new ArrayList<>(path));
+            collect(entry.getValue(), path, res);
             path.remove(path.size() - 1);
         }
     }
